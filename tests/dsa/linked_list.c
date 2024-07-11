@@ -20,6 +20,17 @@ void pop_node(Node *last) {
 	UNIMPLEMENTED;
 }
 
+Node* populate_recursive_ll(Node *ref, int max) {
+	if (ref->val == max)
+		return ref;
+
+	Node *node = (Node*)malloc(sizeof(Node));
+	node->val = ref->val+1;
+	ref->next = node;
+	
+	populate_recursive_ll(node, max);
+}
+
 Node* populate_ll(Node *root, int iters)
 {
 	Node *curr = root;
@@ -46,9 +57,7 @@ int main()
 {
 	Node root = {0};
 	Node *last;
-	last = populate_ll(&root, 80);
-	last = populate_ll(last, 10);
-	pop_node(last);
+	last = populate_recursive_ll(&root, 100);
 	print_ll(root);
 	return 0;
 }
