@@ -7,7 +7,6 @@
 #include <arpa/inet.h>
 
 #define BUFF_SIZE 1024
-#define DEBUG 0
 
 int main(int argc, char **argv)
 {
@@ -44,17 +43,8 @@ int main(int argc, char **argv)
 
 	char *buffer = (char*)calloc(BUFF_SIZE, sizeof(char));
 	memset(buffer, 0, BUFF_SIZE);
-
-#ifdef DEBUG
-#if DEBUG == 1
-	int recieved_bytes = recv(socket_fd, buffer, BUFF_SIZE, 0);
-	printf("[LOG] Message from the sever: \"%s\"\n", buffer);
-	printf("[DEBUG] Client recieved %d bytes from the server\n", recieved_bytes);
-#else
 	recv(socket_fd, buffer, BUFF_SIZE, 0);
 	printf("[LOG] Message from the sever: \"%s\"\n", buffer);
-#endif
-#endif
-	
+
 	return 0;
 }

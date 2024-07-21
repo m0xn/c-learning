@@ -6,11 +6,9 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#define LISTENING_PORT "8080"
+#define LISTENING_PORT "3000"
 #define BACKLOG 5
 #define BUFF_SIZE 1024
-
-#define DEBUG 1
 
 char* addr_port(struct sockaddr *conn_info) {
 	char ip[INET_ADDRSTRLEN], port[6];
@@ -20,13 +18,13 @@ char* addr_port(struct sockaddr *conn_info) {
 		case AF_INET: {
 			struct sockaddr_in *ipv4 = (struct sockaddr_in*) conn_info;
 			inet_ntop(ipv4->sin_family, &ipv4->sin_addr, ip, sizeof ip);
-			sprintf(port, "%d", ipv4->sin_port);
+			sprintf(port, "%u", ipv4->sin_port);
 			break;
 		}
 		case AF_INET6: {
 			struct sockaddr_in6 *ipv6 = (struct sockaddr_in6*) conn_info;
 			inet_ntop(ipv6->sin6_family, &ipv6->sin6_addr, ip, sizeof ip);
-			sprintf(port, "%d", ipv6->sin6_port);
+			sprintf(port, "%u", ipv6->sin6_port);
 			break;
 		}
 	}
@@ -54,11 +52,11 @@ int main()
 	socklen_t addr_len;
 
 	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_INET;
+	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	status = getaddrinfo(NULL, "3000", &hints, &res);
+	status = getaddrinfo(NULL, LISTENING_PORT, &hints, &res);
 	if (status < 0) {
 		fprintf(stderr, "[ERROR] Failed to get addrinfo: %s\n", gai_strerror(status));
 		exit(1);
@@ -98,17 +96,10 @@ int main()
 
 	printf("[LOG] Client %s connected to the server\n", addr_port(&connection_addr));
 
-
-#ifdef DEBUG
-#if DEBUG == 1
-	const char *msg = "Hello, client!";
-	int sent_bytes = send(conn_fd, msg, strlen(msg), 0);
-	printf("[DEBUG] Server sent %d bytes to the client\n", sent_bytes);
-#else
 	const char *msg = "Hello, client!";
 	send(conn_fd, msg, strlen(msg), 0);
-#endif
-#endif
+
+	freeaddrinfo(res);
 	
 	return 0;
 }
