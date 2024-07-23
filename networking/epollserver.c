@@ -25,12 +25,10 @@ void* get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6*) sa)->sin6_addr);
 }
 
-void strip_usrn(char *usrn) {
-	char *temp = (char*)calloc(strlen(usrn), sizeof(char));
-	strcpy(temp, usrn);
-	const size_t usrn_len = strcspn(usrn, "/r/n");
-	strncpy(usrn, temp, usrn_len);
-	free(temp);
+void format_usrn(char *dst, char *src)
+{
+	size_t usrn_len = strcspn(src, "\r\n");
+	strncpy(dst, src, usrn_len);
 }
 
 void add_usr(struct pollfd **pfds, struct usr **usrs, size_t *usrs_count, size_t *usrs_size, char *usrn, int filde)
@@ -182,31 +180,38 @@ int main()
 					if (nbytes == -1) {
 						perror("[ERROR] recv");
 						continue;
-					} else if (nbytes == 0) {
-						printf("[LOG] Client on socket %d disconnected\n", connfd);
-						rm_usr(pfds, usrs, &usrs_count, i);
-						continue;
 					}
 
 					add_usr(&pfds, &usrs, &usrs_count, &usrs_size, usrn_buffer, connfd);;
 
 					inet_ntop(conn_addr.ss_family, get_in_addr((struct sockaddr*) &conn_addr), ip, sizeof ip);
-					strip_usrn(usrn_buffer);
 
-					printf("Got a connection from %s on socket %d with the username: %s\n", ip, connfd, usrn_buffer);
+					char *tmp_buff = (char*)calloc(MAX_USRN_LEN, sizeof(char));
+					format_usrn(tmp_buff, usrn_buffer);
+
+					printf("Got a connection from %s on socket %d with the username: %s\n", ip, connfd, tmp_buff);
+					free(tmp_buff);
 				} else {
 					// Connected client wanting to send in a message
 					memset(buffer, 0, sizeof buffer);
-					if (recv(pfds[i].fd, buffer, sizeof buffer, 0) == -1) {
+					nbytes = recv(pfds[i].fd, buffer, sizeof buffer, 0);
+					if (nbytes == -1) {
 						perror("[ERROR] recv");
+						continue;
+					} else if (nbytes == 0) {
+						printf("[LOG] Client on socket %ld disconnected\n", i);
+						rm_usr(pfds, usrs, &usrs_count, i);
 						continue;
 					}
 
-					strip_usrn(usrs[i].username);
+
+					char usrn_buff[MAX_USRN_LEN];
+					memset(usrn_buff, 0, sizeof usrn_buff);
+					format_usrn(usrn_buff, usrs[i].username);
 
 					char formatted_buffer[MAX_USRN_LEN+MAX_BUFF_SIZE+2];
 					memset(formatted_buffer, 0, sizeof formatted_buffer);
-					sprintf(formatted_buffer, "%s> ", usrs[i].username);
+					sprintf(formatted_buffer, "%s> ", usrn_buff);
 					strcat(formatted_buffer, buffer);
 					
 					// Send to the rest of the users connected to the server
